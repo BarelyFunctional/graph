@@ -8,17 +8,7 @@
 ; use special flag to signify var like $ ?
 ; a var is not namespaced and starts with $, may have default values
 
-(defmacro dependency-graph
-  
-  )
-  
-
-#_(defn update-first [pred f coll]
-  (let [[before [at & after]] (split-with (comp not pred) coll)]
-    (concat before (cons (f at) after))))
-
-#_(defmacro defnk [& forms]
-  `(defn ~@(expand-args forms)))
+;; output a map of keywords to fnk's
 
 (defn add-req-ks [ks f] (vary-meta f assoc :req-ks (into #{} ks)))
 
@@ -27,6 +17,33 @@
      ~(map keyword args)
      (fn [{:keys ~args}] ~@body)))
 
+(defn resolved? [sym] (boolean (.getNamespace sym)))
+
+(defmacro with-each [x xs f]
+  `(vary-meta
+    (fn [m#] (map #(f (assoc m# ~(keyword x) (force %))) ~xs))
+    merge (update-in (meta ~f) [:req-ks] conj ~xs)))
+
+(defmacro dfn [body]
+  (let [params (remove #(or (resolved? %) (resolve %)) (free-symbols body))
+        smap   (zipmap params (map (partial list 'force) params))]
+    `(fnk ~(vec params) (delay ~(form-replace smap body)))))
+
+(defmacro eq [name body] `(def ~name (dfn ~body)))
+
+(def evens (partial take-nth 2))
+(def odds (comp evens rest))
+
+(defn wrap-form [form]
+  (cond
+    (and (seq? form) (not-empty form) (= (first form) 'with-each)) form
+    (coll? form) (list 'dfn form)
+    :else form))
+
+(defmacro deps [& kvs]
+  (zipmap
+   (map keyword (evens kvs))
+   (map wrap-form (odds kvs))))
 
 (defmacro defnk [& fdecl]
   (let [[before [args & after]] (split-with (comp not vector?) fdecl)
