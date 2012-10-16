@@ -1,4 +1,17 @@
-(ns graph.core)
+(ns graph.core
+  (:use graph.form-analysis))
+
+; for each value, find the free-symbols, throw away the namespaced symbols
+; collect all resolvable symbols, make these optional, all unresolved are required
+; use of delays
+; replace all symbols with (force symbol)
+; use special flag to signify var like $ ?
+; a var is not namespaced and starts with $, may have default values
+
+(defmacro dependency-graph
+  
+  )
+  
 
 #_(defn update-first [pred f coll]
   (let [[before [at & after]] (split-with (comp not pred) coll)]
@@ -73,6 +86,11 @@
         reduce-fn (fn [m [k f]] (assoc m k (f m)))]
     (add-req-ks (required-keys graph)
       (fn [m] (reduce reduce-fn m ordered)))))
+
+; each function has optional values
+
+; credit-curves (with-each curve-id credit-curve-ids credit-curve)
+
 
   ; compute an order to work out the keys, start out with the required keys
   ; work out the required inputs?
